@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            background-color: #333;
+            position: relative;
+        }
+
+        #player {
+            font-size: 2em; /* Tamaño del ícono */
+            color: #fff;
+            position: absolute;
+            bottom: 0;
+            margin-block: 100px;
+            transform: rotate(315deg); /* Gira la nave 180 grados */
+        }
+
+        .obstacle {
+            font-size: 2em; /* Tamaño del ícono */
+            color: red;
+            position: absolute;
+            top: -50px; /* Comienza por encima del contenedor de juego */
+            transform: rotate(315deg); /* Gira los meteoritos 180 grados */
+            user-select: none;
+        }
+    </style>
+    <title>Nave espacial</title>
+    <link href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <i id="player" class="fas fa-rocket"></i>
+        <h3 style="user-select: none;">Puntos: <span id="points">0</span></h3>
+    </div>
+    <script>
+        const player = document.getElementById('player');
+        const gameContainer = document.getElementById('game-container');
+        const pointsDisplay = document.getElementById('points');
+
+        let movingLeft = false;
+        let movingRight = false;
+        let gameSpeed = 5;
+        let score = 0;
+
+        document.addEventListener('touchstart', handleTouchStart);
+        document.addEventListener('touchend', handleTouchEnd);
+
+        function handleTouchStart(event) {
+            const touchX = event.touches[0].clientX;
+
+            if (touchX < window.innerWidth / 2) {
+                movingLeft = true;
+            } else {
+                movingRight = true;
+            }
+        }
+
+        function handleTouchEnd() {
+            movingLeft = false;
+            movingRight = false;
+        }
+
+        function movePlayer() {
+            if (movingLeft && player.offsetLeft > 0) {
+                player.style.left = `${player.offsetLeft - gameSpeed}px`;
+            }
+
+            if (movingRight && player.offsetLeft + player.clientWidth < gameContainer.clientWidth) {
+                player.style.left = `${player.offsetLeft + gameSpeed}px`;
+            }
+        }
+
+        function createObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            obstacle.innerHTML = '<i class="fas fa-meteor"></i>';
+            obstacle.style.left = `${Math.random() * (gameContainer.clientWidth - 50)}px`;
+            gameContainer.appendChild(obstacle);
+
+            let obstaclePosition = -50; // Comienza por encima del contenedor de juego
+
+            const obstacleInterval = setInterval(() => {
+                if (
+                    obstaclePosition + 50 > player.offsetTop &&
+                    obstaclePosition < player.offsetTop + player.clientHeight &&
+                    parseInt(obstacle.style.left) > player.offsetLeft &&
+                    parseInt(obstacle.style.left) < player.offsetLeft + player.clientWidth
+                ) {
+                    // Jugador golpea el obstáculo, juego terminado
+                    alert(`Game Over! Your score: ${score}`);
+                    location.reload() // Recargar la página para reiniciar el juego
+                }
+
+                if (obstaclePosition > gameContainer.clientHeight) {
+                    clearInterval(obstacleInterval);
+                    gameContainer.removeChild(obstacle);
+                    score++;
+                    pointsDisplay.textContent = score;
+                }
+
+                obstaclePosition += gameSpeed;
+                obstacle.style.top = `${obstaclePosition}px`;
+            }, 20);
+        }
+
+        setInterval(createObstacle, 2000); // Generar obstáculos cada 2000ms (2 segundos)
+        setInterval(movePlayer, 20);
+    </script>
+</body>
+</html>
