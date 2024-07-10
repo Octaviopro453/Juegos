@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Ajedrez con Movimientos Realistas y Seguros</title>
+    <style>
+        #chessboard {
+            width: 400px;
+            height: 400px;
+            border: 2px solid #333;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+        }
+        .square {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        .white { background-color: #f0d9b5; }
+        .black { background-color: #b58863; }
+        .highlight { background-color: yellow; }
+        .valid-move { background-color: lightgreen; }
+        .capture-move { background-color: lightcoral; }
+        #turn-indicator {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="chessboard"></div>
+    <div id="turn-indicator"></div>
+
+    <script>
+        const board = document.getElementById('chessboard');
+        const turnIndicator = document.getElementById('turn-indicator');
+        let selectedPiece = null;
+        let isWhiteTurn = true;
+
+        const initialBoard = [
+            ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+            ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+            ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+        ];
+
+        function createBoard() {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((i + j) % 2 === 0 ? 'white' : 'black');
+                    square.innerHTML = initialBoard[i][j];
+                    square.dataset.row = i;
+                    square.dataset.col = j;
+                    square.addEventListener('click', () => handleClick(square));
+                    board.appendChild(square);
+                }
+            }
+            updateTurnIndicator();
+        }
+
+        function handleClick(square) {
+            if (selectedPiece) {
+                const fromRow = parseInt(selectedPiece.dataset.row);
+                const fromCol = parseInt(selectedPiece.dataset.col);
+                const toRow = parseInt(square.dataset.row);
+                const toCol = parseInt(square.dataset.col);
+
+                if (isValidMove(selectedPiece.innerHTML, fromRow, fromCol, toRow, toCol)) {
+                    square.innerHTML = selectedPiece.innerHTML;
+                    selectedPiece.innerHTML = '';
+
+                    if (isPromotion(square.innerHTML, toRow)) {
+                        promotePawn(square);
+                    }
+
+                    isWhiteTurn = !isWhiteTurn;
+                    updateTurnIndicator();
+                    checkForCheckMate();
+                } else {
+                    alert("Movimiento no válido");
+                }
+
+                clearHighlights();
+                selectedPiece = null;
+            } else if (square.innerHTML !== '' && isCorrectTurn(square.innerHTML)) {
+                selectedPiece = square;
+                highlightValidMoves(square);
+            }
+        }
+
+        function isValidMove(piece, fromRow, fromCol, toRow, toCol) {
+            const dx = toCol - fromCol;
+            const dy = toRow - fromRow;
+            const adx = Math.abs(dx);
+            const ady = Math.abs(dy);
+
+            const targetPiece = document.querySelector(`[data-row="${toRow}"][data-col="${toCol}"]`).innerHTML;
+
+            if (targetPiece !== '' && isSameColor(piece, targetPiece)) {
+                return false;
+            }
+
+            const isCapture = targetPiece !== '';
+
+            switch (piece) {
+                case '♟':
+                    if ((fromRow === 1 && dy === 2 && dx === 0) || (dy === 1 && dx === 0)) {
+                        return !isCapture && !isBlocked(fromRow, fromCol, toRow, toCol);
+                    }
+                    return dy === 1 && Math.abs(dx) === 1 && isCapture;
+                case '♙':
+                    if ((fromRow === 6 && dy === -2 && dx === 0) || (dy === -1 && dx === 0)) {
+                        return !isCapture && !isBlocked(fromRow, fromCol, toRow, toCol);
+                    }
+                    return dy === -1 && Math.abs(dx) === 1 && isCapture;
+                case '♜': case '♖':
+                    return ((dx === 0 && dy !== 0) || (dy === 0 && dx !== 0)) && !isBlocked(fromRow, fromCol, toRow, toCol);
+                case '♞': case '♘':
+                    return (adx === 1 && ady === 2) || (adx === 2 && ady === 1);
+                case '♝': case '♗':
+                    return adx === ady && !isBlocked(fromRow, fromCol, toRow, toCol);
+                case '♛': case '♕':
+                    return ((dx === 0 && dy !== 0) || (dy === 0 && dx !== 0) || adx === ady) && !isBlocked(fromRow, fromCol, toRow, toCol);
+                case '♚': case '♔':
+                    if (adx <= 1 && ady <= 1) return true;
+                    return isCastling(piece, fromRow, fromCol, toRow, toCol);
+                default:
+                    return false;
+            }
+        }
+
+        function isBlocked(fromRow, fromCol, toRow, toCol) {
+            const dx = toCol - fromCol;
+            const dy = toRow - fromRow;
+            const steps = Math.max(Math.abs(dx), Math.abs(dy));
+            const xStep = dx !== 0 ? dx / Math.abs(dx) : 0;
+            const yStep = dy !== 0 ? dy / Math.abs(dy) : 0;
+
+            for (let i = 1; i < steps; i++) {
+                const row = fromRow + i * yStep;
+                const col = fromCol + i * xStep;
+                const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (square.innerHTML !== '') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function isSameColor(piece1, piece2) {
+            const whitePieces = ['♔', '♕', '♖', '♗', '♘', '♙'];
+            return whitePieces.includes(piece1) === whitePieces.includes(piece2);
+        }
+
+        function highlightValidMoves(square) {
+            const piece = square.innerHTML;
+            const fromRow = parseInt(square.dataset.row);
+            const fromCol = parseInt(square.dataset.col);
+
+            clearHighlights();
+            square.classList.add('highlight');
+
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (isValidMove(piece, fromRow, fromCol, i, j)) {
+                        const targetSquare = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
+                        if (targetSquare.innerHTML === '') {
+                            targetSquare.classList.add('valid-move');
+                        } else {
+                            targetSquare.classList.add('capture-move');
+                        }
+                    }
+                }
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.highlight, .valid-move, .capture-move').forEach(el => {
+                el.classList.remove('highlight', 'valid-move', 'capture-move');
+            });
+        }
+
+        function isCorrectTurn(piece) {
+            const whitePieces = ['♔', '♕', '♖', '♗', '♘', '♙'];
+            return (isWhiteTurn && whitePieces.includes(piece)) || (!isWhiteTurn && !whitePieces.includes(piece));
+        }
+
+        function updateTurnIndicator() {
+            turnIndicator.textContent = `Turno de las ${isWhiteTurn ? 'Blancas' : 'Negras'}`;
+        }
+
+        function isPromotion(piece, toRow) {
+            return (piece === '♙' && toRow === 0) || (piece === '♟' && toRow === 7);
+        }
+
+        function promotePawn(square) {
+            const promotionPiece = prompt("Promoción: elige una pieza (♕, ♖, ♗, ♘):", "♕");
+            if (['♕', '♖', '♗', '♘'].includes(promotionPiece)) {
+                square.innerHTML = promotionPiece;
+            } else {
+                alert("Pieza de promoción no válida. Se usará la reina (♕) por defecto.");
+                square.innerHTML = '♕';
+            }
+        }
+
+        function isCastling(king, fromRow, fromCol, toRow, toCol) {
+            const isWhiteKing = king === '♔';
+            const kingRow = isWhiteKing ? 7 : 0;
+            if (fromRow !== kingRow || fromCol !== 4) return false;
+            if (toRow !== kingRow || (toCol !== 2 && toCol !== 6)) return false;
+
+            const rookCol = toCol === 2 ? 0 : 7;
+            const rook = document.querySelector(`[data-row="${kingRow}"][data-col="${rookCol}"]`).innerHTML;
+
+            if (rook !== (isWhiteKing ? '♖' : '♜')) return false;
+
+            const rookPathBlocked = isBlocked(kingRow, fromCol, kingRow, rookCol);
+            const kingPathBlocked = isBlocked(kingRow, fromCol, kingRow, toCol);
+
+            return !rookPathBlocked && !kingPathBlocked;
+        }
+
+        function checkForCheckMate() {
+    const king = isWhiteTurn ? '♔' : '♚';
+    const opponentKing = isWhiteTurn ? '♚' : '♔';
+    const opponentPieces = isWhiteTurn ? ['♜', '♞', '♝', '♛', '♟', '♚'] : ['♖', '♘', '♗', '♕', '♙', '♔'];
+
+    let kingPosition;
+    for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+            if (document.querySelector(`[data-row="${i}"][data-col="${j}"]`).innerHTML === king) {
+                kingPosition = { row: i, col: j };
+                break;
+            }
+        }
+    }
+
+    if (!kingPosition) {
+        return false;
+    }
+
+    const potentialMoves = [
+        { row: kingPosition.row - 1, col: kingPosition.col },
+        { row: kingPosition.row + 1, col: kingPosition.col },
+        { row: kingPosition.row, col: kingPosition.col - 1 },
+        { row: kingPosition.row, col: kingPosition.col + 1 },
+        { row: kingPosition.row - 1, col: kingPosition.col - 1 },
+        { row: kingPosition.row - 1, col: kingPosition.col + 1 },
+        { row: kingPosition.row + 1, col: kingPosition.col - 1 },
+        { row: kingPosition.row + 1, col: kingPosition.col + 1 },
+    ];
+
+    for (let move of potentialMoves) {
+        if (move.row >= 0 && move.row < 8 && move.col >= 0 && move.col < 8) {
+            const targetSquare = document.querySelector(`[data-row="${move.row}"][data-col="${move.col}"]`);
+            if (!opponentPieces.includes(targetSquare.innerHTML) && !isSquareUnderAttack(move.row, move.col, opponentKing)) {
+                return false; // No es jaque mate si el rey puede moverse a una casilla no atacada
+            }
+        }
+    }
+
+    alert(`¡Jaque mate! Las ${isWhiteTurn ? 'Negras' : 'Blancas'} ganan`);
+    return true;
+}
+
+function isSquareUnderAttack(row, col, king) {
+    const opponentPieces = isWhiteTurn ? ['♜', '♞', '♝', '♛', '♟'] : ['♖', '♘', '♗', '♕', '♙'];
+    const opponentColor = isWhiteTurn ? 'Negras' : 'Blancas';
+
+    for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+            const piece = document.querySelector(`[data-row="${i}"][data-col="${j}"]`).innerHTML;
+            if (opponentPieces.includes(piece) && isValidMove(piece, i, j, row, col)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+        createBoard();
+    </script>
+</body>
+</html>
