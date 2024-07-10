@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego de Ajedrez con Movimientos Realistas y Seguros</title>
+    <title>Ajedrez Game</title>
     <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f8f8;
+        }
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         #chessboard {
             width: 400px;
             height: 400px;
@@ -31,17 +44,36 @@
             font-size: 18px;
             font-weight: bold;
         }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
     </style>
 </head>
 <body>
-    <div id="chessboard"></div>
-    <div id="turn-indicator"></div>
+    <div id="container">
+        <div id="chessboard"></div>
+        <div id="turn-indicator"></div>
+    </div>
 
     <script>
         const board = document.getElementById('chessboard');
         const turnIndicator = document.getElementById('turn-indicator');
         let selectedPiece = null;
-        let isWhiteTurn = true;
+        let isWhiteTurn = true; // Las blancas comienzan primero
+        let gameEnded = false;
 
         const initialBoard = [
             ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
@@ -71,6 +103,8 @@
         }
 
         function handleClick(square) {
+            if (gameEnded) return;
+
             if (selectedPiece) {
                 const fromRow = parseInt(selectedPiece.dataset.row);
                 const fromCol = parseInt(selectedPiece.dataset.col);
@@ -85,11 +119,15 @@
                         promotePawn(square);
                     }
 
-                    isWhiteTurn = !isWhiteTurn;
-                    updateTurnIndicator();
-                    checkForCheckMate();
+                    checkForKingCapture();
+
+                    if (!gameEnded) {
+                        isWhiteTurn = !isWhiteTurn;
+                        updateTurnIndicator();
+                        checkForCheckMate();
+                    }
                 } else {
-                    alert("Movimiento no válido");
+                    shakeBoard();
                 }
 
                 clearHighlights();
@@ -97,7 +135,29 @@
             } else if (square.innerHTML !== '' && isCorrectTurn(square.innerHTML)) {
                 selectedPiece = square;
                 highlightValidMoves(square);
+            } else {
+                shakeBoard();
             }
+        }
+
+        function checkForKingCapture() {
+            const whiteKing = Array.from(document.querySelectorAll('.square')).find(square => square.innerHTML === '♔');
+            const blackKing = Array.from(document.querySelectorAll('.square')).find(square => square.innerHTML === '♚');
+
+            if (!whiteKing) {
+                alert('¡Las Negras ganan!');
+                gameEnded = true;
+            } else if (!blackKing) {
+                alert('¡Las Blancas ganan!');
+                gameEnded = true;
+            }
+        }
+
+        function shakeBoard() {
+            document.body.classList.add('shake');
+            setTimeout(() => {
+                document.body.classList.remove('shake');
+            }, 500);
         }
 
         function isValidMove(piece, fromRow, fromCol, toRow, toCol) {
@@ -149,148 +209,78 @@
             const yStep = dy !== 0 ? dy / Math.abs(dy) : 0;
 
             for (let i = 1; i < steps; i++) {
-                const row = fromRow + i * yStep;
-                const col = fromCol + i * xStep;
-                const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-                if (square.innerHTML !== '') {
-                    return true;
-                }
+                const x = fromCol + i * xStep;
+                const y = fromRow + i * yStep;
+                if (document.querySelector(`[data-row="${y}"][data-col="${x}"]`).innerHTML !== '') return true;
             }
-
             return false;
         }
 
         function isSameColor(piece1, piece2) {
-            const whitePieces = ['♔', '♕', '♖', '♗', '♘', '♙'];
-            return whitePieces.includes(piece1) === whitePieces.includes(piece2);
+            return (piece1.charCodeAt(0) < 9818) === (piece2.charCodeAt(0) < 9818);
+        }
+
+        function isCorrectTurn(piece) {
+            return (isWhiteTurn && piece.charCodeAt(0) < 9818) || (!isWhiteTurn && piece.charCodeAt(0) > 9818);
         }
 
         function highlightValidMoves(square) {
-            const piece = square.innerHTML;
             const fromRow = parseInt(square.dataset.row);
             const fromCol = parseInt(square.dataset.col);
+            const piece = square.innerHTML;
 
-            clearHighlights();
-            square.classList.add('highlight');
-
-            for (let i = 0; i < 8; i++) {
-                for (let j = 0; j < 8; j++) {
-                    if (isValidMove(piece, fromRow, fromCol, i, j)) {
-                        const targetSquare = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
-                        if (targetSquare.innerHTML === '') {
-                            targetSquare.classList.add('valid-move');
-                        } else {
-                            targetSquare.classList.add('capture-move');
-                        }
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    if (isValidMove(piece, fromRow, fromCol, row, col)) {
+                        const targetSquare = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                        targetSquare.classList.add(targetSquare.innerHTML === '' ? 'valid-move' : 'capture-move');
                     }
                 }
             }
         }
 
         function clearHighlights() {
-            document.querySelectorAll('.highlight, .valid-move, .capture-move').forEach(el => {
-                el.classList.remove('highlight', 'valid-move', 'capture-move');
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(square => {
+                square.classList.remove('highlight', 'valid-move', 'capture-move');
             });
         }
 
-        function isCorrectTurn(piece) {
-            const whitePieces = ['♔', '♕', '♖', '♗', '♘', '♙'];
-            return (isWhiteTurn && whitePieces.includes(piece)) || (!isWhiteTurn && !whitePieces.includes(piece));
-        }
-
-        function updateTurnIndicator() {
-            turnIndicator.textContent = `Turno de las ${isWhiteTurn ? 'Blancas' : 'Negras'}`;
-        }
-
-        function isPromotion(piece, toRow) {
-            return (piece === '♙' && toRow === 0) || (piece === '♟' && toRow === 7);
+        function isPromotion(piece, row) {
+            return (piece === '♟' && row === 7) || (piece === '♙' && row === 0);
         }
 
         function promotePawn(square) {
-            const promotionPiece = prompt("Promoción: elige una pieza (♕, ♖, ♗, ♘):", "♕");
-            if (['♕', '♖', '♗', '♘'].includes(promotionPiece)) {
-                square.innerHTML = promotionPiece;
-            } else {
-                alert("Pieza de promoción no válida. Se usará la reina (♕) por defecto.");
-                square.innerHTML = '♕';
+            const promotion = prompt("Promote to (q, r, b, n):").toLowerCase();
+            const isWhite = square.innerHTML === '♙';
+            switch (promotion) {
+                case 'q': square.innerHTML = isWhite ? '♕' : '♛'; break;
+                case 'r': square.innerHTML = isWhite ? '♖' : '♜'; break;
+                case 'b': square.innerHTML = isWhite ? '♗' : '♝'; break;
+                case 'n': square.innerHTML = isWhite ? '♘' : '♞'; break;
+                default: alert("Invalid promotion piece.");
             }
         }
 
-        function isCastling(king, fromRow, fromCol, toRow, toCol) {
-            const isWhiteKing = king === '♔';
-            const kingRow = isWhiteKing ? 7 : 0;
-            if (fromRow !== kingRow || fromCol !== 4) return false;
-            if (toRow !== kingRow || (toCol !== 2 && toCol !== 6)) return false;
+        function isCastling(piece, fromRow, fromCol, toRow, toCol) {
+            if ((piece === '♚' && fromRow === 0 && fromCol === 4) || (piece === '♔' && fromRow === 7 && fromCol === 4)) {
+                if (Math.abs(toCol - fromCol) === 2 && fromRow === toRow) {
+                    const rookCol = toCol === 6 ? 7 : 0;
+                    const rook = document.querySelector(`[data-row="${fromRow}"][data-col="${rookCol}"]`);
+                    if (rook && (rook.innerHTML === '♜' || rook.innerHTML === '♖') && !isBlocked(fromRow, fromCol, toRow, rookCol)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
-            const rookCol = toCol === 2 ? 0 : 7;
-            const rook = document.querySelector(`[data-row="${kingRow}"][data-col="${rookCol}"]`).innerHTML;
-
-            if (rook !== (isWhiteKing ? '♖' : '♜')) return false;
-
-            const rookPathBlocked = isBlocked(kingRow, fromCol, kingRow, rookCol);
-            const kingPathBlocked = isBlocked(kingRow, fromCol, kingRow, toCol);
-
-            return !rookPathBlocked && !kingPathBlocked;
+        function updateTurnIndicator() {
+            turnIndicator.innerHTML = isWhiteTurn ? "Turno de Blancas" : "Turno de Negras";
         }
 
         function checkForCheckMate() {
-    const king = isWhiteTurn ? '♔' : '♚';
-    const opponentKing = isWhiteTurn ? '♚' : '♔';
-    const opponentPieces = isWhiteTurn ? ['♜', '♞', '♝', '♛', '♟', '♚'] : ['♖', '♘', '♗', '♕', '♙', '♔'];
-
-    let kingPosition;
-    for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-            if (document.querySelector(`[data-row="${i}"][data-col="${j}"]`).innerHTML === king) {
-                kingPosition = { row: i, col: j };
-                break;
-            }
         }
-    }
-
-    if (!kingPosition) {
-        return false;
-    }
-
-    const potentialMoves = [
-        { row: kingPosition.row - 1, col: kingPosition.col },
-        { row: kingPosition.row + 1, col: kingPosition.col },
-        { row: kingPosition.row, col: kingPosition.col - 1 },
-        { row: kingPosition.row, col: kingPosition.col + 1 },
-        { row: kingPosition.row - 1, col: kingPosition.col - 1 },
-        { row: kingPosition.row - 1, col: kingPosition.col + 1 },
-        { row: kingPosition.row + 1, col: kingPosition.col - 1 },
-        { row: kingPosition.row + 1, col: kingPosition.col + 1 },
-    ];
-
-    for (let move of potentialMoves) {
-        if (move.row >= 0 && move.row < 8 && move.col >= 0 && move.col < 8) {
-            const targetSquare = document.querySelector(`[data-row="${move.row}"][data-col="${move.col}"]`);
-            if (!opponentPieces.includes(targetSquare.innerHTML) && !isSquareUnderAttack(move.row, move.col, opponentKing)) {
-                return false; // No es jaque mate si el rey puede moverse a una casilla no atacada
-            }
-        }
-    }
-
-    alert(`¡Jaque mate! Las ${isWhiteTurn ? 'Negras' : 'Blancas'} ganan`);
-    return true;
-}
-
-function isSquareUnderAttack(row, col, king) {
-    const opponentPieces = isWhiteTurn ? ['♜', '♞', '♝', '♛', '♟'] : ['♖', '♘', '♗', '♕', '♙'];
-    const opponentColor = isWhiteTurn ? 'Negras' : 'Blancas';
-
-    for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-            const piece = document.querySelector(`[data-row="${i}"][data-col="${j}"]`).innerHTML;
-            if (opponentPieces.includes(piece) && isValidMove(piece, i, j, row, col)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
 
         createBoard();
     </script>
