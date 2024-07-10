@@ -3,54 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nave espacial</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            background-color: #111; /* Color de fondo */
+            font-family: Arial, sans-serif; /* Fuente general */
         }
 
         #game-container {
             width: 100vw;
             height: 100vh;
-            background-color: #333;
+            background-color: #111; /* Color de fondo */
             position: relative;
         }
 
         #player {
-            font-size: 2em; /* Tamaño del ícono */
-            color: #fff;
+            font-size: 2em; /* Tamaño del ícono de la nave */
+            color: #fff; /* Color de la nave */
             position: absolute;
-            bottom: 0;
-            margin-block: 100px;
-            transform: rotate(315deg); /* Gira la nave 180 grados */
+            bottom: 20px; /* Ajuste de posición vertical */
+            left: 50%; /* Centrar inicialmente */
+            transform: translateX(-50%) rotate(0deg); /* Apuntar hacia arriba */
+            transition: transform 0.3s ease; /* Transición suave al girar */
         }
 
         .obstacle {
-            font-size: 2em; /* Tamaño del ícono */
-            color: red;
+            font-size: 2em; /* Tamaño del ícono del obstáculo */
+            color: red; /* Color del obstáculo */
             position: absolute;
-            top: -50px; /* Comienza por encima del contenedor de juego */
-            transform: rotate(315deg); /* Gira los meteoritos 180 grados */
+            transform: rotate(0deg); /* Giro del obstáculo */
             user-select: none;
         }
+
+        h3 {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff; /* Color del texto */
+        }
+
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: #fff;
+            display: none; /* Inicialmente oculto */
+            z-index: 1000;
+        }
+
+        .game-over h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .game-over button {
+            background-color: #ff9800;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .game-over button:hover {
+            background-color: #ffa726;
+        }
     </style>
-    <title>Nave espacial</title>
     <link href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" rel="stylesheet">
 </head>
 <body>
     <div id="game-container">
         <i id="player" class="fas fa-rocket"></i>
-        <h3 style="user-select: none;">Puntos: <span id="points">0</span></h3>
+        <h3>Puntos: <span id="points">0</span></h3>
+        <div class="game-over" id="game-over">
+            <h2>¡Juego Terminado!</h2>
+            <p>Tu puntuación: <span id="final-score">0</span></p>
+            <button onclick="restartGame()">Reiniciar</button>
+        </div>
     </div>
     <script>
         const player = document.getElementById('player');
         const gameContainer = document.getElementById('game-container');
         const pointsDisplay = document.getElementById('points');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
 
         let movingLeft = false;
         let movingRight = false;
         let gameSpeed = 5;
         let score = 0;
+        let gameOverFlag = false;
 
         document.addEventListener('touchstart', handleTouchStart);
         document.addEventListener('touchend', handleTouchEnd);
@@ -81,6 +132,8 @@
         }
 
         function createObstacle() {
+            if (gameOverFlag) return;
+
             const obstacle = document.createElement('div');
             obstacle.classList.add('obstacle');
             obstacle.innerHTML = '<i class="fas fa-meteor"></i>';
@@ -90,6 +143,12 @@
             let obstaclePosition = -50; // Comienza por encima del contenedor de juego
 
             const obstacleInterval = setInterval(() => {
+                if (gameOverFlag) {
+                    clearInterval(obstacleInterval);
+                    gameContainer.removeChild(obstacle);
+                    return;
+                }
+
                 if (
                     obstaclePosition + 50 > player.offsetTop &&
                     obstaclePosition < player.offsetTop + player.clientHeight &&
@@ -97,8 +156,9 @@
                     parseInt(obstacle.style.left) < player.offsetLeft + player.clientWidth
                 ) {
                     // Jugador golpea el obstáculo, juego terminado
-                    alert(`Game Over! Your score: ${score}`);
-                    location.reload() // Recargar la página para reiniciar el juego
+                    gameOver();
+                    clearInterval(obstacleInterval);
+                    gameContainer.removeChild(obstacle);
                 }
 
                 if (obstaclePosition > gameContainer.clientHeight) {
@@ -111,6 +171,19 @@
                 obstaclePosition += gameSpeed;
                 obstacle.style.top = `${obstaclePosition}px`;
             }, 20);
+        }
+
+        function gameOver() {
+            gameOverFlag = true;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function restartGame() {
+            score = 0;
+            pointsDisplay.textContent = score;
+            gameOverScreen.style.display = 'none';
+            gameOverFlag = false;
         }
 
         setInterval(createObstacle, 2000); // Generar obstáculos cada 2000ms (2 segundos)
