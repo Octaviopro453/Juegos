@@ -3,17 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego de Ajedrez con Movimientos Realistas y Seguros</title>
+    <title>Menú de Juegos</title>
+    <link href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .games-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-gap: 20px;
+        }
+        .game {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .game:hover {
+            transform: translateY(-5px);
+        }
+        .game-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .game-icon {
+            font-size: 48px;
+            color: #007bff;
+        }
+        .game-description {
+            color: #666;
+        }
+    </style>
 </head>
 <body>
-  <h1>ERROR 404</h1>
-  <p>Por favor define un juego en el enlase</p>
-  <p>Aquí hay unos juegos:</p>
-  <a href="https://octaviopro453.github.io/Juegos/Ajedrez.html">Ajedrez</a>
-  <a href="https://octaviopro453.github.io/Juegos/Tictactoe.html">3 en raya</a>
-  <a href="https://octaviopro453.github.io/Juegos/Nave.html">Nave</a>
-  <a href="https://octaviopro453.github.io/Juegos/SistemSolar.html">Sistema Solar</a>
-  <a href="https://octaviopro453.github.io/Juegos/SistemSolarInfo.html">Sistema Solar Info</a>
-  <a href="https://octaviopro453.github.io/Juegos/T-rex.html">Trex</a>
+    <div class="container">
+        <h1>Menú de Juegos</h1>
+        <ul class="games-list">
+            <li class="game">
+                <i class="fas fa-chess-board game-icon"></i>
+                <div class="game-title">Ajedrez</div>
+                <div class="game-description">Juega al ajedrez con movimientos realistas.</div>
+                <a href="https://octaviopro453.github.io/Juegos/Ajedrez.html">Jugar ahora</a>
+            </li>
+            <li class="game">
+                <i class="fas fa-gamepad game-icon"></i>
+                <div class="game-title">3 en raya</div>
+                <div class="game-description">Clásico juego de tres en raya.</div>
+                <a href="https://octaviopro453.github.io/Juegos/Tictactoe.html">Jugar ahora</a>
+            </li>
+            <li class="game">
+                <i class="fas fa-space-shuttle game-icon"></i>
+                <div class="game-title">Nave</div>
+                <div class="game-description">Pilota una nave espacial.</div>
+                <a href="https://octaviopro453.github.io/Juegos/Nave.html">Jugar ahora</a>
+            </li>
+            <li class="game">
+                <i class="fas fa-sun game-icon"></i>
+                <div class="game-title">Sistema Solar</div>
+                <div class="game-description">Explora el sistema solar.</div>
+                <a href="https://octaviopro453.github.io/Juegos/SistemSolar.html">Jugar ahora</a>
+            </li>
+            <li class="game">
+                <i class="fas fa-info-circle game-icon"></i>
+                <div class="game-title">Sistema Solar Info</div>
+                <div class="game-description">Información detallada sobre el sistema solar.</div>
+                <a href="https://octaviopro453.github.io/Juegos/SistemSolarInfo.html">Jugar ahora</a>
+            </li>
+            <li class="game">
+                <i class="fas fa-dinosaur game-icon"></i>
+                <div class="game-title">Trex</div>
+                <div class="game-description">Corre con el T-Rex de Chrome.</div>
+                <a href="https://octaviopro453.github.io/Juegos/T-rex.html">Jugar ahora</a>
+            </li>
+        </ul>
+    </div>
 </body>
-  </html>
+</html>
