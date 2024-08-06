@@ -1,0 +1,554 @@
+<html><head><base href="https://websim-snake-responsive.example.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSim Snake Game - Responsive Design</title>
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
+    font-family: Arial, sans-serif;
+    touch-action: none;
+    overflow: hidden;
+}
+
+#game-container {
+    width: 90vmin;
+    height: 90vmin;
+    max-width: 600px;
+    max-height: 600px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.snake-segment {
+    position: absolute;
+    background-color: #4CAF50;
+    box-shadow: 0 0 10px #4CAF50;
+    border-radius: 20%;
+    transition: all 0.1s linear;
+}
+
+.snake-head {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: none;
+    box-shadow: none;
+}
+
+#food {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-size: 5vmin;
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 6vmin;
+    text-align: center;
+    display: none;
+    z-index: 1000;
+}
+
+#game-over button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 4vmin;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+#food.blink {
+    animation: blink 0.5s infinite;
+}
+
+.portal-effect {
+    position: absolute;
+    background: radial-gradient(circle, #00ffff, transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+@keyframes explosionWave {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(20);
+        opacity: 0;
+    }
+}
+
+.explosion-wave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10vmin;
+    height: 10vmin;
+    background: radial-gradient(circle, rgba(255,0,0,0.8) 0%, rgba(255,165,0,0.6) 50%, rgba(255,255,0,0.4) 100%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: explosionWave 2s forwards;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+.fade-in-out {
+    animation: fadeInOut 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.5s;
+}
+
+@keyframes dissipate {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    100% { transform: scale(0) rotate(720deg); opacity: 0; }
+}
+
+.dissipate {
+    animation: dissipate 1s forwards;
+}
+
+#intro-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+#intro-text {
+    font-size: 15vmin;
+    font-weight: bold;
+    color: #4CAF50;
+    text-shadow: 0 0 10px #4CAF50, 0 0 20px #4CAF50, 0 0 30px #4CAF50;
+    opacity: 0;
+    text-align: center;
+}
+
+@keyframes glowPulse {
+    0% { text-shadow: 0 0 10px #4CAF50, 0 0 20px #4CAF50, 0 0 30px #4CAF50; }
+    50% { text-shadow: 0 0 20px #4CAF50, 0 0 40px #4CAF50, 0 0 60px #4CAF50; }
+    100% { text-shadow: 0 0 10px #4CAF50, 0 0 20px #4CAF50, 0 0 30px #4CAF50; }
+}
+
+@keyframes introAnimation {
+    0% { transform: scale(0) rotate(0deg); opacity: 0; }
+    20% { transform: scale(1.2) rotate(360deg); opacity: 1; }
+    40% { transform: scale(1) rotate(720deg); }
+    60% { transform: scale(1.1) rotate(1080deg); }
+    80% { transform: scale(1) rotate(1440deg); }
+    100% { transform: scale(20) rotate(1800deg); opacity: 0; }
+}
+
+.intro-animate {
+    animation: introAnimation 4s ease-in-out, glowPulse 1s infinite;
+}
+
+@keyframes deviceAnimation {
+    0% { transform: translateY(-100%); opacity: 0; }
+    20% { transform: translateY(0); opacity: 1; }
+    80% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(100%); opacity: 0; }
+}
+
+.device-animate {
+    animation: deviceAnimation 4s ease-in-out;
+}
+
+@keyframes creatorAnimation {
+    0% { transform: scale(0) rotate(0deg); opacity: 0; }
+    20% { transform: scale(1.2) rotate(360deg); opacity: 1; }
+    80% { transform: scale(1.2) rotate(360deg); opacity: 1; }
+    100% { transform: scale(0) rotate(720deg); opacity: 0; }
+}
+
+.creator-animate {
+    animation: creatorAnimation 4s ease-in-out;
+}
+</style>
+</head>
+<body>
+<div id="intro-overlay">
+    <div id="intro-text">SNAKE</div>
+</div>
+<div id="game-container">
+    <div id="food"></div>
+    <div id="score">Score: 0</div>
+    <div id="game-over">
+        Game Over!<br>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script>
+const gameContainer = document.getElementById('game-container');
+const food = document.getElementById('food');
+const scoreElement = document.getElementById('score');
+const gameOverElement = document.getElementById('game-over');
+const introOverlay = document.getElementById('intro-overlay');
+const introText = document.getElementById('intro-text');
+
+let snake = [{x: 0, y: 0}];
+let foodPosition = {x: 0, y: 0};
+let direction = 'right';
+let score = 0;
+let gameLoop;
+let gridSize = 20;
+let cellSize;
+
+const foodEmojis = ['🐁', '🐀', '🐇', '🐦', '🐤', '🐥', '🥚', '🦎', '🐸', '🐠', '🐟'];
+
+function getDeviceInfo() {
+    const userAgent = navigator.userAgent;
+    if (/Android/i.test(userAgent)) {
+        return "Android Device";
+    } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
+        return "iOS Device";
+    } else if (/Windows/i.test(userAgent)) {
+        return "Windows Device";
+    } else if (/Mac/i.test(userAgent)) {
+        return "Mac Device";
+    } else {
+        return "Unknown Device";
+    }
+}
+
+function playIntro() {
+    return new Promise((resolve) => {
+        introText.classList.add('intro-animate');
+        setTimeout(() => {
+            introText.classList.remove('intro-animate');
+            introText.textContent = getDeviceInfo();
+            introText.classList.add('device-animate');
+            setTimeout(() => {
+                introText.classList.remove('device-animate');
+                introText.textContent = "Created by OctavioproYt453";
+                introText.classList.add('creator-animate');
+                setTimeout(() => {
+                    introOverlay.style.display = 'none';
+                    resolve();
+                }, 4000);
+            }, 4000);
+        }, 4000);
+    });
+}
+
+async function initGame() {
+    await playIntro();
+    startGame();
+}
+
+function startGame() {
+    updateGridSize();
+    createSnake();
+    placeFood();
+    gameLoop = setInterval(moveSnake, 150);
+    document.addEventListener('keydown', changeDirection);
+    setupTouchEvents();
+}
+
+function updateGridSize() {
+    const containerSize = Math.min(gameContainer.clientWidth, gameContainer.clientHeight);
+    cellSize = containerSize / gridSize;
+    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
+}
+
+function createSnake() {
+    snake = [{x: 0, y: 0}];
+    updateSnakePosition();
+}
+
+function placeFood() {
+    foodPosition.x = Math.floor(Math.random() * gridSize);
+    foodPosition.y = Math.floor(Math.random() * gridSize);
+    food.style.left = (foodPosition.x * cellSize) + 'px';
+    food.style.top = (foodPosition.y * cellSize) + 'px';
+    food.style.width = cellSize + 'px';
+    food.style.height = cellSize + 'px';
+    food.style.fontSize = (cellSize * 0.8) + 'px';
+    food.innerHTML = foodEmojis[Math.floor(Math.random() * foodEmojis.length)];
+    food.classList.add('blink');
+}
+
+function moveSnake() {
+    const head = {...snake[0]};
+
+    switch(direction) {
+        case 'up': head.y--; break;
+        case 'down': head.y++; break;
+        case 'left': head.x--; break;
+        case 'right': head.x++; break;
+    }
+
+    if (head.x < 0) {
+        head.x = gridSize - 1;
+        createPortalEffect(gridSize - 1, head.y, 'left');
+    } else if (head.x >= gridSize) {
+        head.x = 0;
+        createPortalEffect(0, head.y, 'right');
+    }
+    if (head.y < 0) {
+        head.y = gridSize - 1;
+        createPortalEffect(head.x, gridSize - 1, 'top');
+    } else if (head.y >= gridSize) {
+        head.y = 0;
+        createPortalEffect(head.x, 0, 'bottom');
+    }
+
+    for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === head.x && snake[i].y === head.y) {
+            gameOver();
+            return;
+        }
+    }
+
+    snake.unshift(head);
+
+    if (head.x === foodPosition.x && head.y === foodPosition.y) {
+        score++;
+        scoreElement.textContent = `Score: ${score}`;
+        placeFood();
+    } else {
+        snake.pop();
+    }
+
+    updateSnakePosition();
+}
+
+function createPortalEffect(x, y, side) {
+    const portal = document.createElement('div');
+    portal.classList.add('portal-effect');
+    portal.style.left = (x * cellSize) + 'px';
+    portal.style.top = (y * cellSize) + 'px';
+    portal.style.width = cellSize + 'px';
+    portal.style.height = cellSize + 'px';
+    gameContainer.appendChild(portal);
+
+    portal.offsetHeight;
+    portal.style.opacity = '1';
+
+    setTimeout(() => {
+        portal.style.opacity = '0';
+        setTimeout(() => portal.remove(), 300);
+    }, 300);
+
+    const oppositePortal = document.createElement('div');
+    oppositePortal.classList.add('portal-effect');
+    switch(side) {
+        case 'left': 
+            oppositePortal.style.left = '0px';
+            oppositePortal.style.top = (y * cellSize) + 'px';
+            break;
+        case 'right':
+            oppositePortal.style.left = ((gridSize - 1) * cellSize) + 'px';
+            oppositePortal.style.top = (y * cellSize) + 'px';
+            break;
+        case 'top':
+            oppositePortal.style.left = (x * cellSize) + 'px';
+            oppositePortal.style.top = '0px';
+            break;
+        case 'bottom':
+            oppositePortal.style.left = (x * cellSize) + 'px';
+            oppositePortal.style.top = ((gridSize - 1) * cellSize) + 'px';
+            break;
+    }
+    oppositePortal.style.width = cellSize + 'px';
+    oppositePortal.style.height = cellSize + 'px';
+    gameContainer.appendChild(oppositePortal);
+
+    oppositePortal.offsetHeight;
+    oppositePortal.style.opacity = '1';
+
+    setTimeout(() => {
+        oppositePortal.style.opacity = '0';
+        setTimeout(() => oppositePortal.remove(), 300);
+    }, 300);
+}
+
+function updateSnakePosition() {
+    const oldSegments = document.querySelectorAll('.snake-segment');
+    oldSegments.forEach(segment => segment.remove());
+
+    snake.forEach((segment, index) => {
+        const snakeSegment = document.createElement('div');
+        snakeSegment.classList.add('snake-segment');
+        snakeSegment.style.left = (segment.x * cellSize) + 'px';
+        snakeSegment.style.top = (segment.y * cellSize) + 'px';
+        snakeSegment.style.width = cellSize + 'px';
+        snakeSegment.style.height = cellSize + 'px';
+        
+        snakeSegment.style.transitionDelay = `${index * 20}ms`;
+
+        if (index === 0) {
+            snakeSegment.classList.add('snake-head');
+            snakeSegment.innerHTML = '🐍';
+            snakeSegment.style.fontSize = (cellSize * 0.8) + 'px';
+            snakeSegment.style.transform = `rotate(${getRotationAngle()}deg)`;
+            snakeSegment.style.zIndex = '2';
+        }
+
+        gameContainer.appendChild(snakeSegment);
+    });
+}
+
+function getRotationAngle() {
+    switch(direction) {
+        case 'up': return -90;
+        case 'down': return 90;
+        case 'left': return 180;
+        case 'right': return 0;
+    }
+}
+
+function changeDirection(e) {
+    const newDirection = {
+        'ArrowUp': 'up',
+        'ArrowDown': 'down',
+        'ArrowLeft': 'left',
+        'ArrowRight': 'right'
+    }[e.key];
+
+    if (newDirection && isValidDirection(newDirection)) {
+        direction = newDirection;
+    }
+}
+
+function isValidDirection(newDirection) {
+    if (snake.length === 1) return true;
+    return !(
+        (newDirection === 'up' && direction === 'down') ||
+        (newDirection === 'down' && direction === 'up') ||
+        (newDirection === 'left' && direction === 'right') ||
+        (newDirection === 'right' && direction === 'left')
+    );
+}
+
+function setupTouchEvents() {
+    const hammer = new Hammer(gameContainer);
+    hammer.get('swipe').set({ direction: Hammer.DIRECTION_ALL });
+
+    hammer.on('swipe', function(event) {
+        const newDirection = {
+            [Hammer.DIRECTION_UP]: 'up',
+            [Hammer.DIRECTION_DOWN]: 'down',
+            [Hammer.DIRECTION_LEFT]: 'left',
+            [Hammer.DIRECTION_RIGHT]: 'right'
+        }[event.direction];
+
+        if (newDirection && isValidDirection(newDirection)) {
+            direction = newDirection;
+        }
+    });
+}
+
+function gameOver() {
+    clearInterval(gameLoop);
+    playEpicDeathAnimation().then(() => {
+        gameOverElement.style.display = 'block';
+    });
+}
+
+function playEpicDeathAnimation() {
+    return new Promise((resolve) => {
+        // Create explosion wave
+        const explosionWave = document.createElement('div');
+        explosionWave.classList.add('explosion-wave');
+        gameContainer.appendChild(explosionWave);
+
+        // Shake the game container
+        gameContainer.classList.add('shake');
+
+        // Fade in and out effect
+        document.body.classList.add('fade-in-out');
+
+        // Dissipate snake segments
+        const snakeSegments = document.querySelectorAll('.snake-segment');
+        snakeSegments.forEach((segment, index) => {
+            setTimeout(() => {
+                segment.classList.add('dissipate');
+            }, index * 50);
+        });
+
+        // Remove effects and resolve promise after animation
+        setTimeout(() => {
+            explosionWave.remove();
+            gameContainer.classList.remove('shake');
+            document.body.classList.remove('fade-in-out');
+            snakeSegments.forEach(segment => segment.remove());
+            resolve();
+        }, 2000);
+    });
+}
+
+function restartGame() {
+    const snakeSegments = document.querySelectorAll('.snake-segment');
+    snakeSegments.forEach(segment => segment.remove());
+    
+    score = 0;
+    direction = 'right';
+    scoreElement.textContent = 'Score: 0';
+    gameOverElement.style.display = 'none';
+    startGame();
+}
+
+window.addEventListener('resize', () => {
+    updateGridSize();
+    updateSnakePosition();
+    placeFood();
+});
+
+initGame();
+</script>
+</body>
+</html>
